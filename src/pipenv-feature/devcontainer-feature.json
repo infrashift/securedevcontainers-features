@@ -1,0 +1,8 @@
+{
+    "name": "Python3 Pipenv",
+    "id": "pipenv",
+    "version": "1.0.0",
+    "description": "A feature to install Python3 pipenv on Redhat UBI DevContainers",
+    "options": {},
+    "installsAfter": []
+}

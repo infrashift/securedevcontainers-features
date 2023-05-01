@@ -1,0 +1,57 @@
+# ansible-role-feature/tasks/main.yml
+---
+# SECURE DEVCONTAINER FEATURE BOOTSTRAP TASKS
+# Shortcircuit execution if the Secure DevContainer is incompatible with this role
+# Find _securedevcontainer_variant in hosts.yml inventory file; this variable is set in each 'ubi*' group for the host and passed in by the calling playbook
+# Find _securedevcontainer_compatibility_list definition in ./vars/main.yml
+- name: Assert that _securedevcontainer_variant is in the _securedevcontainer_compatibility_list
+  ansible.builtin.assert:
+    that: _securedevcontainer_variant in _securedevcontainer_compatibility_list
+    fail_msg: "_securedevcontainer_variant = '{{ _securedevcontainer_variant }}' is NOT in the _securedevcontainer_compatibility_list = '{{ _securedevcontainer_compatibility_list }}'."
+    success_msg: "_securedevcontainer_variant = '{{ _securedevcontainer_variant }}' is in the _securedevcontainer_compatibility_list = '{{ _securedevcontainer_compatibility_list }}'."
+
+- name: Extract the UBI version number from _securedevcontainer_variant
+  ansible.builtin.set_fact:
+    _securedevcontainer_ubi_version: "{{ _securedevcontainer_variant | regex_replace('^.*?(\\d+)$', '\\1') }}"
+
+- name: Display _securedevcontainer_ubi_version
+  ansible.builtin.debug:
+    msg: "UBI version number: {{ _securedevcontainer_ubi_version }}"
+
+# TARGET FEATURE TASKS
+- name: Check if pip3 is installed
+  ansible.builtin.command:
+    cmd: which pip3
+  register: _pip3_installed
+  ignore_errors: yes
+  become: yes
+  become_user: "{{ _target_username }}"
+
+- name: Assert pip3 is installed
+  ansible.builtin.assert:
+    that:
+      - _pip3_installed.rc == 0
+    fail_msg: "pip3 is not installed"
+
+- name: Install pipenv for the specified user
+  ansible.builtin.pip:
+    name: pipenv
+    state: present
+    extra_args: --user
+  become: yes
+  become_user: "{{ _target_username }}"
+
+- name: Check if Pipenv is installed
+  ansible.builtin.command:
+    cmd: pipenv --version
+  environment:
+    PATH: "/home/{{ _target_username }}/.local/bin:{{ ansible_env.PATH }}"
+  register: _pipenv_version_result
+  failed_when: "'pipenv, version' not in _pipenv_version_result.stdout"
+  become: yes
+  become_user: "{{ _target_username }}"
+
+# SECURE DEVCONTAINER FEATURE BOOTSTRAP TASKS
+- name: Unset _securedevcontainer_ubi_version
+  ansible.builtin.set_fact:
+    _securedevcontainer_ubi_version: null
