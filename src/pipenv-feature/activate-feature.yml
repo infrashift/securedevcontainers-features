@@ -1,0 +1,12 @@
+# feature-playbook.yml
+---
+- name: Install pipenv for the specified user
+  hosts: ubi
+  become: true
+  roles:
+  - role: ansible-role-feature
+    vars:
+    # securedevcontainer_variant is a group variable; see hosts.yml
+    - _securedevcontainer_variant: "{{ securedevcontainer_variant }}"
+    - _target_username: "{{ target_username }}"
+...
